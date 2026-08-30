@@ -1,0 +1,35 @@
+appId: com.inventory.management
+productName: "Inventory Management System"
+copyright: Copyright © 2026 Inventory Management
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**
+  - dist-electron/**
+  - package.json
+
+asar: true
+
+# On Windows, code signing is optional. An unsigned build still installs and runs.
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+      # - ia32  (enable if 32-bit support is needed)
+  icon: build/icon.ico
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: "Inventory Management System"
+  artifactName: "InventoryManagement-Setup-${version}.exe"
+
+# Keep downloads minimal / no auto-update network requirements.
+publish: null
