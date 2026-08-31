@@ -6,7 +6,11 @@ export function round2(n: number): number {
 }
 
 export function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  // Local calendar date (not UTC) to avoid midnight timezone day shifts.
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
 }
 
 /** YYYY-MM-DD -> YYYY-MM (month key). */
@@ -63,12 +67,16 @@ export function parseNumber(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Convert an 8-char HH:MM string to hours (decimal). */
+/**
+ * Convert an 8-char HH:MM span to hours (decimal).
+ * Supports overnight spans: 22:00 -> 02:00 = 4h.
+ */
 export function timeToHours(start?: string | null, end?: string | null): number {
   if (!start || !end) return 0;
   const [sh, sm] = start.split(':').map(Number);
   const [eh, em] = end.split(':').map(Number);
-  if ([sh, sm, eh, em].some((x) => !Number.isFinite(x))) return 0;
-  const mins = eh * 60 + em - (sh * 60 + sm);
-  return Math.max(0, mins / 60);
+  if (!Number.isFinite(sh) || !Number.isFinite(sm) || !Number.isFinite(eh) || !Number.isFinite(em)) return 0;
+  let mins = eh * 60 + em - (sh * 60 + sm);
+  if (mins < 0) mins += 24 * 60; // crossed midnight
+  return mins / 60;
 }

@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavLink, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { LogOut, Lock, Candy } from 'lucide-react';
 import { NAV_ITEMS } from './nav';
 import { useAuth } from '@/store/auth';
+import { useSettings } from '@/store/settings';
 import { UpdateBanner } from '@/components/update/UpdateBanner';
 
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
@@ -48,6 +49,7 @@ function AppRoutes() {
 
 export function AppLayout() {
   const { user, logout, lock } = useAuth();
+  const { businessName } = useSettings();
   const loc = useLocation();
   const current = NAV_ITEMS.find((n) => loc.pathname.startsWith(n.path))?.label ?? 'Dashboard';
   const today = new Date().toLocaleDateString('en-US', {
@@ -57,6 +59,11 @@ export function AppLayout() {
     day: 'numeric',
   });
 
+  // Reflect the configured business name in the OS window / document title.
+  useEffect(() => {
+    document.title = `${businessName} — Management System`;
+  }, [businessName]);
+
   return (
     <div className="h-screen flex overflow-hidden">
       {/* Sidebar */}
@@ -65,8 +72,8 @@ export function AppLayout() {
           <div className="rounded-lg bg-brand-600 p-1.5 text-white">
             <Candy className="w-5 h-5" />
           </div>
-          <div className="leading-tight">
-            <div className="font-bold text-white text-sm">Candy Production</div>
+          <div className="leading-tight min-w-0">
+            <div className="font-bold text-white text-sm leading-snug break-words line-clamp-2">{businessName}</div>
             <div className="text-[11px] text-slate-400">Management System</div>
           </div>
         </div>

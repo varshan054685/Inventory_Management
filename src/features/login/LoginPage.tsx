@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/store/auth';
+import { useSettings } from '@/store/settings';
 import { Button, Field, Card, toast } from '@/components/ui';
 import { Candy, Lock, Eye, EyeOff } from 'lucide-react';
 
 export function LoginPage() {
   const { login } = useAuth();
+  const { businessName } = useSettings();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -31,7 +33,7 @@ export function LoginPage() {
           <div className="rounded-xl bg-brand-600 p-3 text-white mb-3">
             <Candy className="w-7 h-7" />
           </div>
-          <h1 className="text-xl font-bold text-slate-800 dark:text-white">Candy Production</h1>
+          <h1 className="text-xl font-bold text-slate-800 dark:text-white text-center leading-snug">{businessName}</h1>
           <p className="text-sm text-slate-500">Sign in to continue</p>
         </div>
         <form onSubmit={submit} className="space-y-4">

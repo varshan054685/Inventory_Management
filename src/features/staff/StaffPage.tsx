@@ -6,6 +6,7 @@ import { MasterList } from '@/components/shared/MasterList';
 import { Modal, Button, Field, StatusBadge } from '@/components/ui';
 import type { Employee } from '@/shared/types';
 import { currency } from '@/utils/format';
+import { DatePicker } from '@/components/ui/calendar';
 
 interface FormState {
   name: string; contactNumber: string; address: string; joiningDate: string;
@@ -88,7 +89,7 @@ export function StaffPage() {
             <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </Field>
           <Field label="Contact Number"><input className="input" value={form.contactNumber} onChange={(e) => setForm({ ...form, contactNumber: e.target.value })} /></Field>
-          <Field label="Joining Date"><input type="date" className="input" value={form.joiningDate} onChange={(e) => setForm({ ...form, joiningDate: e.target.value })} /></Field>
+          <Field label="Joining Date"><DatePicker value={form.joiningDate} onChange={(v) => setForm({ ...form, joiningDate: v })} /></Field>
           <Field label="Daily Wage" required error={fe.wage}><input className="input" type="number" value={form.dailyWage} onChange={(e) => setForm({ ...form, dailyWage: e.target.value })} /></Field>
           <Field label="Half-Day Wage"><input className="input" type="number" value={form.halfDayWage} onChange={(e) => setForm({ ...form, halfDayWage: e.target.value })} /></Field>
           <Field label="Overtime Rate (₹/hr)"><input className="input" type="number" value={form.overtimeRate} onChange={(e) => setForm({ ...form, overtimeRate: e.target.value })} /></Field>

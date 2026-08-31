@@ -1,6 +1,7 @@
 import React from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/store/auth';
+import { SettingsProvider } from '@/store/settings';
 import { Toaster } from '@/components/ui';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { LoginPage } from '@/features/login/LoginPage';
@@ -51,10 +52,12 @@ function Gate() {
 function App() {
   return (
     <AuthProvider>
-      <Routes>
-        <Route path="*" element={<Gate />} />
-      </Routes>
-      <Toaster />
+      <SettingsProvider>
+        <Routes>
+          <Route path="*" element={<Gate />} />
+        </Routes>
+        <Toaster />
+      </SettingsProvider>
     </AuthProvider>
   );
 }

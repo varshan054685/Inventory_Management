@@ -133,6 +133,22 @@ Because backups can contain sensitive employee and business data, you can create
 
 **Settings → Change Password** — enter the current password and a new one (min 4 characters). Passwords are stored as salted hashes (never plaintext).
 
+## 9.1 Fast Date & Time Controls
+
+The app ships shared, lightweight date/time controls (no heavy calendar library) for instant, keyboard-friendly entry:
+
+- **Month navigator** `[ < ] August 2026 [ > ] {Today}` on month-driven screens (Attendance, Wages, Overtime, Reports) — switches instantly, no page reload.
+- **Calendar popup** for individual dates (Purchase, Production, Dispatch, Staff, Overtime) with month navigation, Today, and keyboard/mouse selection.
+- **AM/PM time picker** (e.g. `6:00 PM`) with hour/minute/AM-PM selectors for Overtime; internal storage stays 24-hour `18:00`.
+- **Live overtime amounts**: Hours and Amount recalc instantly when Start/End change; **overnight shifts** (e.g. `10:00 PM → 2:00 AM = 4 h`) are handled automatically.
+- Dates are handled as local calendar dates (never UTC) to avoid timezone day-shifts.
+
+## 9.2 Business Name Branding
+
+- The **first-time setup** asks for your business name (default: *Candy Production*); it is stored in the SQLite settings and survives restarts/logouts.
+- The **sidebar**, **login screen**, **window title**, **reports**, and **PDF exports** use the configured name and update immediately — no app restart.
+- Edit it anytime under **Settings → Business Information → Business Name**.
+
 ## 10. Login / Lock
 
 - **Login:** your username + password (first-time setup creates the admin account).

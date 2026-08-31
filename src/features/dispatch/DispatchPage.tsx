@@ -5,7 +5,8 @@ import { useToast } from '@/hooks/useToast';
 import { Card, Button, Field, Modal, EmptyState, Pagination, ConfirmDialog, Spinner } from '@/components/ui';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import type { Dispatch, Product } from '@/shared/types';
-import { currency, number } from '@/utils/format';
+import { currency, number, todayIso } from '@/utils/format';
+import { DateRangePicker, DatePicker } from '@/components/ui/calendar';
 
 const PAGE = 15;
 
@@ -25,19 +26,19 @@ export function DispatchPage() {
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Dispatch | null>(null);
-  const [form, setForm] = useState({ productId: '' as number | '', quantity: '', vehicleNumber: '', location: '', receiver: '', notes: '', unitPrice: '' });
+  const [form, setForm] = useState({ productId: '' as number | '', quantity: '', vehicleNumber: '', location: '', receiver: '', notes: '', unitPrice: '', dispatchDate: todayIso() });
   const [available, setAvailable] = useState<{ available: number; unit: string } | null>(null);
   const [fe, setFe] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Dispatch | null>(null);
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ productId: '', quantity: '', vehicleNumber: '', location: '', receiver: '', notes: '', unitPrice: '' });
+    setForm({ productId: '', quantity: '', vehicleNumber: '', location: '', receiver: '', notes: '', unitPrice: '', dispatchDate: todayIso() });
     setAvailable(null); setFe(''); setOpen(true);
   };
   const openEdit = (d: Dispatch) => {
     setEditing(d);
-    setForm({ productId: d.productId, quantity: String(d.quantity), vehicleNumber: d.vehicleNumber ?? '', location: d.location ?? '', receiver: d.receiver ?? '', notes: d.notes ?? '', unitPrice: String(d.totalAmount && d.quantity ? d.totalAmount / d.quantity : '') });
+    setForm({ productId: d.productId, quantity: String(d.quantity), vehicleNumber: d.vehicleNumber ?? '', location: d.location ?? '', receiver: d.receiver ?? '', notes: d.notes ?? '', unitPrice: String(d.totalAmount && d.quantity ? d.totalAmount / d.quantity : ''), dispatchDate: d.dispatchDate });
     setFe(''); setOpen(true);
     void api.dispatch.availability(d.productId).then((a) => setAvailable(a)).catch(() => {});
   };
@@ -56,7 +57,7 @@ export function DispatchPage() {
     if (!form.productId || !(Number(form.quantity) > 0)) { setFe('Select a product and enter a quantity > 0'); return; }
     setFe('');
     try {
-      const payload = { productId: Number(form.productId), quantity: Number(form.quantity), vehicleNumber: form.vehicleNumber || null, location: form.location || null, receiver: form.receiver || null, notes: form.notes || null, unitPrice: form.unitPrice ? Number(form.unitPrice) : null, dispatchDate: new Date().toISOString().slice(0, 10) };
+      const payload = { productId: Number(form.productId), quantity: Number(form.quantity), vehicleNumber: form.vehicleNumber || null, location: form.location || null, receiver: form.receiver || null, notes: form.notes || null, unitPrice: form.unitPrice ? Number(form.unitPrice) : null, dispatchDate: form.dispatchDate };
       if (editing) await api.dispatch.update(editing.id, payload);
       else await api.dispatch.create(payload);
       toast.success(editing ? 'Dispatch updated — stock adjusted' : 'Dispatch saved — stock deducted');
@@ -80,9 +81,7 @@ export function DispatchPage() {
             <p className="text-sm text-slate-500 mt-0.5">Dispatch deducts finished product stock.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <input type="date" className="input w-40" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setPage(1); }} />
-            <span className="text-slate-400">to</span>
-            <input type="date" className="input w-40" value={toDate} onChange={(e) => { setToDate(e.target.value); setPage(1); }} />
+            <DateRangePicker from={fromDate} to={toDate} onFrom={(v) => { setFromDate(v); setPage(1); }} onTo={(v) => { setToDate(v); setPage(1); }} />
             <input className="input w-52" placeholder="Search #/product/vehicle" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
             <Button variant="primary" onClick={openCreate}><Plus className="w-4 h-4" /> New Dispatch</Button>
           </div>
@@ -154,6 +153,9 @@ export function DispatchPage() {
           </Field>
           <Field label="Selling Price / Unit (optional)">
             <input className="input" type="number" value={form.unitPrice} onChange={(e) => setForm({ ...form, unitPrice: e.target.value })} />
+          </Field>
+          <Field label="Dispatch Date">
+            <DatePicker value={form.dispatchDate} onChange={(d) => setForm({ ...form, dispatchDate: d })} />
           </Field>
           <Field label="Notes" className="md:col-span-2">
             <input className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />

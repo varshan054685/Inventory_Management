@@ -1,12 +1,42 @@
+# Dependencies
 node_modules/
+
+# Build outputs
 dist/
 dist-electron/
+
+# Electron builder output (installers/binaries — too large for git)
 release/
+
+# Logs
 *.log
+npm-debug.log*
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Vite cache
 .vite/
+
+# Test coverage
 coverage/
+
+# Database files
 *.db
 *.db-journal
-!src/core/testing/**/*.db
+*.sqlite
+*.sqlite-journal
 data/
+
+# Encrypted backups
+*.enc
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Editor
+.vscode/settings.json
+.idea/

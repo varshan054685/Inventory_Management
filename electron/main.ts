@@ -40,8 +40,8 @@ async function ensureDatabase(): Promise<void> {
   const filePath = dbFilePath();
   logInfo('[main] opening database at', filePath);
   manager = await openDatabase(filePath);
-  logInfo('[main] database ready, schema version applied');
-  ctx = { manager, isLocked: false, authenticated: false };
+  logInfo('[main] database ready, schema version applied');      ctx = { manager, isLocked: false, authenticated: false };
+  applyBusinessTitle();
   stopAutoBackup = scheduleAutoBackups(manager, () => getSettings(manager.db).backupFrequency);
 
   // ---- Inactivity auto-lock (secure default 15 min) ----
@@ -209,6 +209,7 @@ ipcMain.handle(CHANNEL, async (_event, command: string, params: unknown) => {
     schedulePersist();
     if (command === 'settings.save') {
       refreshSecurityConfig();
+      applyBusinessTitle();
     }
     if (command === 'auth.unlock' || command === 'auth.login' || command === 'auth.setup') {
       ctx.authenticated = true;
@@ -217,7 +218,7 @@ ipcMain.handle(CHANNEL, async (_event, command: string, params: unknown) => {
     if (command === 'auth.logout' || command === 'auth.lock') {
       ctx.authenticated = false;
     }
-    return { ok: true, result };
+    return JSON.parse(JSON.stringify({ ok: true, result: result ?? null }));
   } catch (err) {
     // Return safe message; never leak stack traces or internals.
     return {
@@ -226,6 +227,19 @@ ipcMain.handle(CHANNEL, async (_event, command: string, params: unknown) => {
     };
   }
 });
+
+/** Set the OS window title from the stored business name (local settings only). */
+function applyBusinessTitle(): void {
+  try {
+    const name = (ctx?.manager?.db && getSettings(ctx.manager.db).companyName?.trim()) || null;
+    const base = name ? `${name} — Management System` : 'Inventory Management System';
+    for (const win of BrowserWindow.getAllWindows()) {
+      win.setTitle(base);
+    }
+  } catch {
+    /* non-fatal */
+  }
+}
 
 function refreshSecurityConfig(): void {
   try {

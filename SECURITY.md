@@ -347,13 +347,25 @@ can be verified**.
   certificate are configured, the updater reports "up to date"/offline and the
   app is updated manually. Automatic update checks are still available and
   safe when unconfigured.
-- **Dependency advisories (as of this writing):** `npm audit` reports
-  high-severity advisories in `xlsx` (SheetJS) for which no npm-published fix
-  exists, and moderate advisories in `react-router-dom`/`react-router` that are
-  only addressed by a breaking upgrade to v7. Review these before each release:
-  consider a maintained alternative for spreadsheet export or pin the vendor
-  distribution, and plan the react-router v7 upgrade deliberately. Do not run
-  `npm audit fix --force` blindly, as it applies breaking changes.
+- **Dependency advisories:** the production dependency tree (`npm audit
+  --omit=dev`) is kept at **zero vulnerabilities**. Notable past issues that
+  are now resolved:
+  - The npm `xlsx` (SheetJS) package had high-severity advisories with no
+    npm-published fix; it was **replaced with `exceljs`** for `.xlsx` export and
+    a dependency-free CSV encoder. Do not reintroduce `xlsx`.
+  - `react-router-dom` was upgraded from v6 to **v7** to clear open-redirect
+    and SSR-hydration advisories; the app uses only the compatible
+    client-side declarative API, so no code changes were required.
+  - A root `overrides` entry pins a patched `uuid` (the transitive dependency
+    used by `exceljs`, which calls `uuid.v4`). Keep this override in place
+    until `exceljs` ships an updated range.
+  The full `npm audit` also reports **build-time-only** vulnerabilities in
+  devDependencies (`electron`, `esbuild`, `tar`, `extract-zip`, and
+  `electron-builder`). These packages run only during development/packaging,
+  are not shipped, and are tracked separately from the production runtime.
+  Always run `npm audit` (including `--omit=dev`) before each release. Do not
+  run `npm audit fix --force` blindly, as it applies breaking changes to the
+  build toolchain.
 - **Forgotten password:** There is no self-service password recovery. Restore
   from a backup or re-initialize the database (with data backing up first).
 

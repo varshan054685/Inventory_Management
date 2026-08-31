@@ -6,6 +6,7 @@ import { Card, Button, Field, Modal, EmptyState, Spinner, StatusBadge, ConfirmDi
 import { Calculator, Lock, Unlock, Pencil } from 'lucide-react';
 import type { Wage } from '@/shared/types';
 import { currency, currentMonth, monthLabel } from '@/utils/format';
+import { MonthPicker } from '@/components/ui/calendar';
 
 export function WagesPage() {
   const toast = useToast();
@@ -80,7 +81,7 @@ export function WagesPage() {
             <p className="text-sm text-slate-500 mt-0.5">Calculated from attendance (full & half days) plus overtime. Lock records to finalize.</p>
           </div>
           <div className="flex items-center gap-2">
-            <input type="month" className="input w-44" value={month} onChange={(e) => setMonth(e.target.value)} />
+            <MonthPicker value={month} onChange={setMonth} />
             <Button variant="secondary" onClick={openPreview} disabled={busy}><Calculator className="w-4 h-4" /> Preview</Button>
             <Button variant="primary" onClick={saveAll} disabled={busy}><Calculator className="w-4 h-4" /> Calculate All</Button>
           </div>

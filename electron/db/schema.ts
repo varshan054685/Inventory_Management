@@ -270,4 +270,16 @@ ALTER TABLE backup_history ADD COLUMN is_encrypted INTEGER NOT NULL DEFAULT 0;
 `,
 });
 
+// Migration 3: performance indexes for month-scoped and report queries.
+MIGRATIONS.push({
+  version: 3,
+  name: 'performance-indexes',
+  sql: `
+CREATE INDEX IF NOT EXISTS idx_overtime_date ON overtime(date);
+CREATE INDEX IF NOT EXISTS idx_wages_employee_month ON wages(employee_id, month);
+CREATE INDEX IF NOT EXISTS idx_purchase_items_material ON purchase_items(raw_material_id);
+CREATE INDEX IF NOT EXISTS idx_stock_ref ON stock_movements(reference_id);
+`,
+});
+
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

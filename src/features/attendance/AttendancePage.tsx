@@ -2,10 +2,10 @@ import React, { useMemo, useState } from 'react';
 import { api } from '@/api/client';
 import { useData } from '@/hooks/useData';
 import { useToast } from '@/hooks/useToast';
-import { Card, Field, Button, Spinner, EmptyState, StatusBadge } from '@/components/ui';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Card, Field, Button, Spinner, EmptyState } from '@/components/ui';
 import type { Employee, AttendanceStatus } from '@/shared/types';
 import { currentMonth } from '@/utils/format';
+import { MonthPicker } from '@/components/ui/calendar';
 
 const STATUS_CYCLE: AttendanceStatus[] = ['P', 'HD', 'A', 'WO', 'H'];
 const STATUS_LABEL: Record<AttendanceStatus, string> = { P: 'P', HD: 'HD', A: 'A', WO: 'WO', H: 'H' };
@@ -43,12 +43,6 @@ export function AttendancePage() {
     return cells;
   }, [month]);
 
-  const shiftMonth = (delta: number) => {
-    const [y, m] = month.split('-').map(Number);
-    const d = new Date(y, m - 1 + delta, 1);
-    setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
-  };
-
   const clickCell = (date?: string) => {
     if (!employeeId || !date) return;
     const cur = attendanceMap?.[date];
@@ -85,7 +79,7 @@ export function AttendancePage() {
       <Card>
         <div className="flex flex-wrap items-end gap-4 mb-4">
           <Field label="Month">
-            <input type="month" className="input w-44" value={month} onChange={(e) => setMonth(e.target.value)} />
+            <MonthPicker value={month} onChange={setMonth} />
           </Field>
           <Field label="Employee" required>
             <select className="input w-56" value={employeeId} onChange={(e) => setEmployeeId(e.target.value ? Number(e.target.value) : '')}>
@@ -93,12 +87,7 @@ export function AttendancePage() {
               {(employees ?? []).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
             </select>
           </Field>
-          <div className="flex items-center gap-1">
-            <Button variant="secondary" onClick={() => shiftMonth(-1)}><ChevronLeft className="w-4 h-4" /></Button>
-            <Button variant="secondary" onClick={() => shiftMonth(1)}><ChevronRight className="w-4 h-4" /></Button>
-          </div>
-          <Button variant="ghost" onClick={() => setMonth(currentMonth())}>Today</Button>
-          <div className="ml-auto flex items-center">Status is toggled in order P → HD → A → WO → H on click.</div>
+          <div className="ml-auto text-xs text-slate-400">Click a day to toggle P → HD → A → WO → H</div>
         </div>
 
         {/* Legend + summary */}

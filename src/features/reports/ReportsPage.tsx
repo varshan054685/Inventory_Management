@@ -4,8 +4,10 @@ import { useData } from '@/hooks/useData';
 import { useToast } from '@/hooks/useToast';
 import { Card, Button, Field, EmptyState, Spinner } from '@/components/ui';
 import { FileText, FileSpreadsheet, FileDown, Printer } from 'lucide-react';
-import { currency, number, monthLabel, todayIso } from '@/utils/format';
+import { currency, number, monthLabel } from '@/utils/format';
 import { exportCSV, exportExcel, exportPDF, type ExportColumn } from '@/utils/export';
+import { MonthPicker, DateRangePicker } from '@/components/ui/calendar';
+import { useSettings } from '@/store/settings';
 import type { ItemType } from '@/shared/types';
 
 // ---------------------------------------------------------------------------
@@ -30,6 +32,10 @@ function lastOfMonth(): string {
   const d = new Date();
   const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   return `${m}-${String(new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()).padStart(2, '0')}`;
+}
+
+function currentMonthIso(): string {
+  return firstOfMonth().slice(0, 7);
 }
 
 const REPORTS: ReportDef[] = [
@@ -137,11 +143,12 @@ const CATEGORIES = ['Purchases', 'Production', 'Stock', 'Staff', 'Wages', 'Dispa
 
 export function ReportsPage() {
   const toast = useToast();
+  const { businessName } = useSettings();
   const [cat, setCat] = useState('Purchases');
   const [reportId, setReportId] = useState(REPORTS[0].id);
   const [fromDate, setFromDate] = useState(firstOfMonth());
   const [toDate, setToDate] = useState(lastOfMonth());
-  const [month, setMonth] = useState(todayIso().slice(0, 7));
+  const [month, setMonth] = useState(currentMonthIso());
 
   const report = REPORTS.find((r) => r.id === reportId) ?? REPORTS[0];
   const reportList = REPORTS.filter((r) => r.category === cat);
@@ -155,7 +162,8 @@ export function ReportsPage() {
     if (!data) return;
     const base = `${report.label.replace(/\s+/g, '_')}_${fromDate}_${toDate}`;
     try {
-      if (kind === 'pdf') await exportPDF(report.label, `${fromDate} to ${toDate}`, report.columns, data, `${base}.pdf`);
+      const rangeLabel = report.usesMonth ? monthLabel(month) : `${fromDate} to ${toDate}`;
+      if (kind === 'pdf') await exportPDF(report.label, rangeLabel, report.columns, data, `${base}.pdf`, businessName);
       else if (kind === 'xlsx') await exportExcel(data, report.columns, `${base}.xlsx`);
       else await exportCSV(data, report.columns, `${base}.csv`);
       toast.success(`${report.label} exported`);
@@ -198,11 +206,10 @@ export function ReportsPage() {
       <Card>
         <div className="flex flex-wrap items-end gap-3">
           {report.usesMonth ? (
-            <Field label="Month"><input type="month" className="input w-48" value={month} onChange={(e) => setMonth(e.target.value)} /></Field>
+            <Field label="Month"><MonthPicker value={month} onChange={setMonth} /></Field>
           ) : (
             <>
-              <Field label="From"><input type="date" className="input w-44" value={fromDate} onChange={(e) => setFromDate(e.target.value)} /></Field>
-              <Field label="To"><input type="date" className="input w-44" value={toDate} onChange={(e) => setToDate(e.target.value)} /></Field>
+              <Field label="Range"><DateRangePicker from={fromDate} to={toDate} onFrom={setFromDate} onTo={setToDate} /></Field>
             </>
           )}
           <Button variant="secondary" onClick={refresh}><FileText className="w-4 h-4" /> Refresh</Button>
@@ -216,8 +223,9 @@ export function ReportsPage() {
       </Card>
 
       {/* Report table */}
-      <Card>
-        <div className="flex items-center justify-between mb-3">
+      <Card className="report-print reveal-print">
+        <div className="hidden print:block text-sm font-bold mb-2">{businessName}</div>
+        <div className="flex items-center justify-between mb-3 no-print">
           <h2 className="card-title">{report.label}</h2>
           {report.totals && data && data.length > 0 && (
             <div className="flex items-center gap-4">

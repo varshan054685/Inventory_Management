@@ -5,7 +5,8 @@ import { useToast } from '@/hooks/useToast';
 import { Card, Button, Field, Modal, EmptyState, Pagination, ConfirmDialog, Spinner } from '@/components/ui';
 import { Plus, Trash2, Factory, CheckCircle2, AlertTriangle } from 'lucide-react';
 import type { Production, Product } from '@/shared/types';
-import { currency, number } from '@/utils/format';
+import { currency, number, todayIso } from '@/utils/format';
+import { DatePicker } from '@/components/ui/calendar';
 
 const PAGE = 15;
 
@@ -22,7 +23,7 @@ export function ProductionPage() {
   useEffect(() => { void api.products.list().then(setProducts).catch(() => {}); }, []);
 
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ productId: '' as number | '', units: '', costPerUnit: '', notes: '' });
+  const [form, setForm] = useState({ productId: '' as number | '', units: '', costPerUnit: '', notes: '', productionDate: todayIso() });
   const [preview, setPreview] = useState<{ materials: Array<{ rawMaterialId: number; name: string; unit: string; required: number; available: number }>; insufficient: boolean; totalCost: number } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<Production | null>(null);
@@ -55,10 +56,10 @@ export function ProductionPage() {
     if (preview?.insufficient) { toast.error('Cannot produce: raw material stock is insufficient. Check the list below or enable negative stock in Settings.'); return; }
     setSaving(true);
     try {
-      await api.production.create({ productId: Number(form.productId), units: Number(form.units), costPerUnit: Number(form.costPerUnit || 0), notes: form.notes || null, productionDate: new Date().toISOString().slice(0, 10) });
+      await api.production.create({ productId: Number(form.productId), units: Number(form.units), costPerUnit: Number(form.costPerUnit || 0), notes: form.notes || null, productionDate: form.productionDate });
       toast.success('Production completed — finished stock increased');
       setOpen(false);
-      setForm({ productId: '', units: '', costPerUnit: '', notes: '' });
+      setForm({ productId: '', units: '', costPerUnit: '', notes: '', productionDate: todayIso() });
       setPreview(null);
       refresh();
       setListVersion((v) => v + 1);
@@ -87,7 +88,7 @@ export function ProductionPage() {
             <h2 className="card-title">Production Records</h2>
             <p className="text-sm text-slate-500 mt-0.5">When production is saved, raw materials are deducted via the recipe and finished goods are added.</p>
           </div>
-          <Button variant="primary" onClick={() => setOpen(true)}><Plus className="w-4 h-4" /> Record Production</Button>
+          <Button variant="primary" onClick={() => { setForm((f) => ({ productId: '', units: '', costPerUnit: '', notes: '', productionDate: todayIso() })); setPreview(null); setOpen(true); }}><Plus className="w-4 h-4" /> Record Production</Button>
         </div>
         {error && <div className="text-sm text-red-600 mb-3">{error}</div>}
         {loading && !data ? <div className="h-40 flex items-center justify-center"><Spinner /></div> : !data || data.rows.length === 0 ? <EmptyState message="No production records yet" /> : (
@@ -146,7 +147,10 @@ export function ProductionPage() {
           <Field label="Production Cost / Unit">
             <input className="input" type="number" value={form.costPerUnit} placeholder="e.g. 2.50" onChange={(e) => setForm({ ...form, costPerUnit: e.target.value })} />
           </Field>
-          <Field label="Notes" className="md:col-span-3">
+          <Field label="Production Date" required>
+            <DatePicker value={form.productionDate} onChange={(d) => setForm({ ...form, productionDate: d })} />
+          </Field>
+          <Field label="Notes" className="md:col-span-2">
             <input className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           </Field>
         </div>

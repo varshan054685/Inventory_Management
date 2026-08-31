@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/store/auth';
+import { api } from '@/api/client';
 import { Button, Field, Card } from '@/components/ui';
-import { Candy, UserPlus } from 'lucide-react';
+import { Candy, UserPlus, Store } from 'lucide-react';
 
 export function SetupPage() {
   const { setup } = useAuth();
+  const [businessName, setBusinessName] = useState('Candy Production');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -25,6 +27,9 @@ export function SetupPage() {
     setBusy(true);
     try {
       await setup(username, password);
+      // Persist the business name (survives restart/logout). Non-fatal on error.
+      const name = businessName.trim();
+      if (name) await api.settings.save({ companyName: name });
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -45,6 +50,13 @@ export function SetupPage() {
           </p>
         </div>
         <form onSubmit={submit} className="space-y-4">
+          <Field label="Business Name" required>
+            <div className="flex items-center gap-2">
+              <Store className="w-4 h-4 text-slate-400" />
+              <input className="input" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="e.g. Candy Production" />
+            </div>
+            <p className="text-xs text-slate-400 mt-1">This name appears throughout the application (sidebar, reports, window title). You can change it anytime in Settings.</p>
+          </Field>
           <Field label="Username" required>
             <input className="input" value={username} autoFocus onChange={(e) => setUsername(e.target.value)} placeholder="e.g. admin" />
           </Field>

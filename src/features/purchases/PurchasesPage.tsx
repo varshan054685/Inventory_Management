@@ -5,7 +5,8 @@ import { useToast } from '@/hooks/useToast';
 import { Card, Button, Field, Modal, EmptyState, Pagination, SearchInput, ConfirmDialog, Spinner } from '@/components/ui';
 import { Plus, Pencil, Trash2, ShoppingCart, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Purchase, PurchaseItem, RawMaterial } from '@/shared/types';
-import { currency } from '@/utils/format';
+import { currency, todayIso } from '@/utils/format';
+import { DatePicker, DateRangePicker } from '@/components/ui/calendar';
 
 const PAGE = 15;
 
@@ -32,7 +33,7 @@ export function PurchasesPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Purchase | null>(null);
   const [pform, setPform] = useState({
-    purchaseDate: new Date().toISOString().slice(0, 10),
+    purchaseDate: todayIso(),
     supplierId: '',
     invoiceNo: '',
     notes: '',
@@ -45,7 +46,7 @@ export function PurchasesPage() {
   const openCreate = () => {
     setEditing(null);
     setPform({
-      purchaseDate: new Date().toISOString().slice(0, 10),
+      purchaseDate: todayIso(),
       supplierId: '', invoiceNo: '', notes: '',
       items: [],
     });
@@ -143,9 +144,7 @@ export function PurchasesPage() {
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <h2 className="card-title">Purchase Records</h2>
           <div className="flex flex-wrap items-center gap-2">
-            <input type="date" className="input w-40" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setPage(1); }} />
-            <span className="text-slate-400">to</span>
-            <input type="date" className="input w-40" value={toDate} onChange={(e) => { setToDate(e.target.value); setPage(1); }} />
+            <DateRangePicker from={fromDate} to={toDate} onFrom={(v) => { setFromDate(v); setPage(1); }} onTo={(v) => { setToDate(v); setPage(1); }} />
             <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search #/invoice/supplier" className="w-56" />
             <Button variant="secondary" onClick={resetFilters}>Reset</Button>
             <Button variant="primary" onClick={openCreate}><Plus className="w-4 h-4" /> New Purchase</Button>
@@ -213,7 +212,7 @@ export function PurchasesPage() {
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <Field label="Purchase Date" required>
-            <input type="date" className="input" value={pform.purchaseDate} onChange={(e) => setPform({ ...pform, purchaseDate: e.target.value })} />
+            <DatePicker value={pform.purchaseDate} onChange={(d) => setPform({ ...pform, purchaseDate: d })} />
           </Field>
           <Field label="Supplier">
             <select className="input" value={pform.supplierId} onChange={(e) => setPform({ ...pform, supplierId: e.target.value })}>

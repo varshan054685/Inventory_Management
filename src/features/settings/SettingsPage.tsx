@@ -3,9 +3,10 @@ import { api } from '@/api/client';
 import { useData } from '@/hooks/useData';
 import { useToast } from '@/hooks/useToast';
 import { Card, Button, Field, Modal, EmptyState, Spinner, ConfirmDialog } from '@/components/ui';
-import { Save, KeyRound, Scale, FlaskConical, Trash2, Plus, X, Lock as LockIcon, DownloadCloud } from 'lucide-react';
+import { Save, KeyRound, Scale, FlaskConical, Trash2, Plus, X, Lock as LockIcon, Store } from 'lucide-react';
 import type { SettingsData, UnitConversion } from '@/shared/types';
 import { useAuth } from '@/store/auth';
+import { useSettings } from '@/store/settings';
 import { UpdateSection } from './UpdateSection';
 
 const UNITS = ['KG', 'PIECES', 'BOXES', 'BUNDLES', 'LITRES'];
@@ -13,6 +14,7 @@ const UNITS = ['KG', 'PIECES', 'BOXES', 'BUNDLES', 'LITRES'];
 export function SettingsPage() {
   const toast = useToast();
   const { data: settings, refresh } = useData(() => api.settings.get(), []);
+  const { save: saveSettingsStore } = useSettings();
   const [form, setForm] = useState<SettingsData | null>(null);
   useEffect(() => {
     if (settings && !form) setForm({ ...settings });
@@ -25,7 +27,8 @@ export function SettingsPage() {
     if (!form) return;
     setSaving(true);
     try {
-      await api.settings.save(form);
+      const saved = await saveSettingsStore(form);
+      setForm({ ...saved });
       toast.success('Settings saved');
       refresh();
     } catch (e) {
@@ -42,9 +45,9 @@ export function SettingsPage() {
   return (
     <div className="space-y-4 max-w-4xl">
       <Card>
-        <h2 className="card-title mb-4">Company Information</h2>
+        <h2 className="card-title mb-4 flex items-center gap-2"><Store className="w-4 h-4 text-brand-500" /> Business Information</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Company Name"><input className="input" value={form.companyName} onChange={(e) => set('companyName', e.target.value)} /></Field>
+          <Field label="Business Name"><input className="input" value={form.companyName} onChange={(e) => set('companyName', e.target.value)} /></Field>
           <Field label="Currency"><select className="input" value={form.currency} onChange={(e) => set('currency', e.target.value)}>
             <option value="INR">INR (₹)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option>
           </select></Field>
@@ -52,6 +55,7 @@ export function SettingsPage() {
           <Field label="Email"><input className="input" value={form.email ?? ''} onChange={(e) => set('email', e.target.value)} /></Field>
           <Field label="Address" className="md:col-span-2"><input className="input" value={form.companyAddress ?? ''} onChange={(e) => set('companyAddress', e.target.value)} /></Field>
         </div>
+        <p className="text-xs text-slate-400 mt-3">The business name appears in the sidebar, window title, and report/print branding. It updates immediately and persists after restart.</p>
       </Card>
 
       <Card>
