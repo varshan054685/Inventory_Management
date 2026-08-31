@@ -6,6 +6,7 @@ import { getSettings } from './settings';
 import { todayIso } from './util';
 import { audit } from './audit';
 import { DATABASE_FILE_NAME } from '../db/manager';
+import { encryptBackup, decryptBackup, isEncryptedBackup } from './backupCrypto';
 
 export interface BackupInfo {
   fileName: string;
@@ -13,6 +14,7 @@ export interface BackupInfo {
   sizeBytes: number;
   createdAt: string;
   kind: 'manual' | 'auto';
+  encrypted?: boolean;
 }
 
 export interface BackupSettings {
@@ -36,33 +38,45 @@ export function getDefaultBackupDir(): string {
 }
 
 /** Create a timestamped backup file. Returns info about it. */
-export async function createBackup(manager: DatabaseManager, kind: 'manual' | 'auto'): Promise<BackupInfo> {
+export async function createBackup(
+  manager: DatabaseManager,
+  kind: 'manual' | 'auto',
+  options?: { password?: string },
+): Promise<BackupInfo> {
   const stamp = `${todayIso().replace(/-/g, '')}_${new Date().toTimeString().slice(0, 5).replace(':', '-')}`;
-  const folder =
-    kind === 'auto'
-      ? getBackupSettings(manager.db).autoBackupFolder
-      : getBackupSettings(manager.db).autoBackupFolder;
-  const fileName = `CandyBackup_${stamp}.db`;
+  const folder = getBackupSettings(manager.db).autoBackupFolder;
+  const isEncrypted = Boolean(options?.password);
+  const fileName = `CandyBackup_${stamp}${isEncrypted ? '.enc' : '.db'}`;
   const target = path.join(folder, fileName);
   fs.mkdirSync(path.dirname(target), { recursive: true });
 
-  // Write via manager.persist so we reuse the atomic temp+rename pattern.
-  manager.persist(target);
+  const raw = manager.exportBytes();
+  const bytes = isEncrypted
+    ? encryptBackup(raw, { password: options!.password! })
+    : Buffer.from(raw);
+  // Atomic write: temp file + rename to avoid corruption on crash.
+  const tmp = path.join(folder, `.${fileName}.tmp`);
+  fs.writeFileSync(tmp, bytes);
+  fs.renameSync(tmp, target);
 
   const sizeBytes = fs.statSync(target).size;
   manager.db.run(
-    'INSERT INTO backup_history (file_name, file_path, size_bytes, kind) VALUES (?, ?, ?, ?)',
-    [fileName, target, sizeBytes, kind],
+    'INSERT INTO backup_history (file_name, file_path, size_bytes, kind, is_encrypted) VALUES (?, ?, ?, ?, ?)',
+    [fileName, target, sizeBytes, kind, isEncrypted ? 1 : 0],
   );
-  audit(manager.db, 'BACKUP_CREATE', 'backup_history', undefined, `Backup ${fileName} (${kind})`);
-  return { fileName, filePath: target, sizeBytes, createdAt: todayIso(), kind };
+  audit(manager.db, 'BACKUP_CREATE', 'backup_history', undefined, `Backup ${fileName} (${kind})` + (isEncrypted ? ' (encrypted)' : ''));
+  return { fileName, filePath: target, sizeBytes, createdAt: todayIso(), kind, encrypted: isEncrypted };
 }
 
 export function listBackups(db: AppDatabase): Array<BackupInfo & { id: number }> {
-  return db.query(`
+  const rows = db.query<
+    BackupInfo & { id: number; encrypted: number | boolean }
+  >(`
     SELECT bh.id, bh.file_name AS fileName, bh.file_path AS filePath, bh.size_bytes AS sizeBytes,
-           bh.created_at AS createdAt, bh.kind FROM backup_history bh ORDER BY bh.id DESC
+           bh.created_at AS createdAt, bh.kind,
+           COALESCE(bh.is_encrypted, 0) AS encrypted FROM backup_history bh ORDER BY bh.id DESC
   `);
+  return rows.map((r) => ({ ...r, encrypted: Number(r.encrypted) === 1 }));
 }
 
 /** Clean up old backups beyond retention window. */
@@ -91,31 +105,50 @@ export function pruneBackups(db: AppDatabase, keep: number): number {
 /**
  * Restore from a backup file. Replaces current database contents.
  * Creates a safety backup of the current DB before doing so.
+ *
+ * Encrypted backups (.enc) require the correct password. On any failure the
+ * current in-memory database is left untouched.
  */
 export async function restoreBackup(
   manager: DatabaseManager,
   backupPath: string,
+  options?: { password?: string },
 ): Promise<{ restored: boolean; message?: string }> {
   if (!fs.existsSync(backupPath)) {
     throw new Error('Backup file not found on disk');
   }
   const stat = fs.statSync(backupPath);
   if (stat.size === 0) throw new Error('Backup file is empty or invalid');
-  const bytes = fs.readFileSync(backupPath);
-  // Basic validation: must be a valid SQLite file (header magic).
-  const magic = bytes.subarray(0, 16).toString('utf8');
-  if (!magic.startsWith('SQLite format 3')) {
-    throw new Error('Not a valid SQLite backup file');
+  const raw = fs.readFileSync(backupPath);
+
+  // Decrypt if this is an encrypted backup container.
+  let bytes: Buffer = raw;
+  if (isEncryptedBackup(raw)) {
+    if (!options?.password) {
+      throw new Error('This backup is encrypted. A password is required to restore it.');
+    }
+    bytes = decryptBackup(raw, options.password);
   }
 
-  // Safety backup of current DB.
+  // Validate: must be a valid SQLite file (header magic) before we touch data.
+  const magic = bytes.subarray(0, 16).toString('utf8');
+  if (!magic.startsWith('SQLite format 3')) {
+    // Distinguish a plain-but-corrupt file from a wrong-password case.
+    if (!isEncryptedBackup(raw)) {
+      throw new Error('Not a valid SQLite backup file');
+    }
+    // Should be unreachable: decryptBackup would throw first on bad auth tag.
+    throw new Error('The backup could not be read. It may be corrupted.');
+  }
+
+  // Safety backup of current DB before any destructive step.
   await createBackup(manager, 'auto');
 
-  // Replace in-memory DB with the new bytes.
+  // Replace in-memory DB with the new bytes. On failure the old DB stays intact.
   if (!manager.replaceFromBytes(bytes)) {
     throw new Error('Could not apply the backup contents');
   }
-  audit(manager.db, 'BACKUP_RESTORE', undefined, undefined, `Restored from ${path.basename(backupPath)}`);
+  audit(manager.db, 'BACKUP_RESTORE', undefined, undefined, `Restored from ${path.basename(backupPath)}` + (isEncryptedBackup(raw) ? ' (encrypted)' : ''));
   return { restored: true };
 }
 

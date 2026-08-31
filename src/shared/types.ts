@@ -227,6 +227,13 @@ export interface SettingsData {
   backupRetention: number;
   dateFormat: string;
   theme: string;
+  requireAuth: boolean;
+  autoLockEnabled: boolean;
+  autoLockMinutes: number;
+  debugLogging: boolean;
+  updateAutoCheck: boolean;
+  updateAutoDownload: boolean;
+  updateChannel: 'stable' | 'beta';
 }
 
 export interface StockBalance {

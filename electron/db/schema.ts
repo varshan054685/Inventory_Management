@@ -261,4 +261,13 @@ CREATE INDEX idx_audit_at ON audit_logs(at);
   },
 ];
 
+// Migration 2: track whether each backup is encrypted.
+MIGRATIONS.push({
+  version: 2,
+  name: 'backup-history-encrypted',
+  sql: `
+ALTER TABLE backup_history ADD COLUMN is_encrypted INTEGER NOT NULL DEFAULT 0;
+`,
+});
+
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

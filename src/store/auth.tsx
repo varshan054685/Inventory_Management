@@ -57,11 +57,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(u);
   };
 
-  const logout = () => {
-    memUser = null;
-    setUser(null);
-  };
-
   const setup = async (username: string, password: string) => {
     const u = await api.auth.setup(username, password);
     memUser = u;
@@ -75,6 +70,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLockedState(true);
   };
 
+  useEffect(() => {
+    // React to main-process inactivity auto-lock (main enforces the lock too).
+    const off = api.updater.onLockState((lockedNow) => {
+      if (lockedNow && memUser) {
+        memLocked = true;
+        setLockedState(true);
+      } else if (!lockedNow) {
+        memLocked = false;
+        setLockedState(false);
+      }
+    });
+    return off;
+  }, []);
+
+  const logout = () => {
+    void api.auth.logout();
+    memUser = null;
+    memLocked = false;
+    setUser(null);
+    setLockedState(false);
+  };
+
   const unlock = async (username: string, password: string) => {
     await api.auth.unlock(username, password);
     memLocked = false;
@@ -86,10 +103,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await api.auth.changePassword(memUser.id, current, next);
   };
 
-  return (
-    <Ctx.Provider value={{ user, loading, needsSetup, locked, login, logout, setup, lock, unlock, changePassword }}>
+  return (      <Ctx.Provider value={{ user, loading, needsSetup, locked, login, logout, setup, lock, unlock, changePassword }}>
       {children}
-    </Ctx.Provider>
+      </Ctx.Provider>
   );
 }
 

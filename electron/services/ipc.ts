@@ -17,11 +17,15 @@ import * as dashboard from './dashboard';
 import * as reports from './reports';
 import * as seed from './seed';
 import * as auditService from './audit';
+import { validateParams } from './validation';
+import { APP_VERSION } from '../shared/appInfo';
 
 type Ctx = {
   manager: DatabaseManager;
   /** Lock state managed by the wrapper. */
   isLocked: boolean;
+  /** Whether a user has successfully authenticated this session. */
+  authenticated: boolean;
 };
 
 type Handler = (db: Ctx, params: unknown) => unknown;
@@ -37,7 +41,16 @@ const HANDLERS: Record<string, Handler> = {
   'auth.login': (c, p) => auth.login(c.manager.db, (p as any).username, (p as any).password),
   'auth.listUsers': (_c) => auth.listUsers(_c.manager.db),
   'auth.changePassword': (c, p) => auth.changePassword(c.manager.db, (p as any).userId, (p as any).currentPassword, (p as any).newPassword),
-  'auth.lock': (c) => { c.isLocked = true; return { locked: true }; },
+  'auth.logout': (c) => {
+    c.isLocked = true;
+    auditService.audit(c.manager.db, 'AUTH_LOGOUT', 'users', undefined, 'Logged out');
+    return { loggedOut: true };
+  },
+  'auth.lock': (c) => {
+    c.isLocked = true;
+    auditService.audit(c.manager.db, 'AUTH_LOCK', 'users', undefined, 'Application locked');
+    return { locked: true };
+  },
   'auth.unlock': (c, p) => {
     const u = auth.login(c.manager.db, (p as any).username, (p as any).password);
     c.isLocked = false;
@@ -176,9 +189,12 @@ const HANDLERS: Record<string, Handler> = {
   'reports.expenseSummary': (c, p) => reports.expenseSummary(c.manager.db, (p as any).fromDate, (p as any).toDate),
 
   // Backup
-  'backup.create': (c, p) => backup.createBackup(c.manager, (p as any)?.kind ?? 'manual'),
+  'backup.create': (c, p) => backup.createBackup(c.manager, (p as any)?.kind ?? 'manual', { password: (p as any)?.password }),
   'backup.list': (c) => backup.listBackups(c.manager.db),
-  'backup.restore': (c, p) => backup.restoreBackup(c.manager, (p as any).backupPath),
+  'backup.restore': (c, p) =>
+    backup.restoreBackup(c.manager, (p as any).backupPath, {
+      password: (p as any)?.password,
+    }),
   'backup.prune': (c, p) => backup.pruneBackups(c.manager.db, (p as any).keep),
 
   // Seed
@@ -191,7 +207,7 @@ const HANDLERS: Record<string, Handler> = {
   // System
   'system.info': (c) => ({
     dbPath: c.manager.filePath,
-    version: '1.0.0',
+    version: APP_VERSION,
     appDataDir: process.env.APP_DATA,
   }),
 };
@@ -218,11 +234,25 @@ export function executeCommand(ctx: Ctx, command: string, params: unknown): unkn
   }
   const handler = HANDLERS[command];
   try {
-    return handler(ctx, params ?? {});
+    // Validate renderer input with the per-command schema BEFORE business logic.
+    // Zod throws a ZodError that we normalize to a safe user-facing message.
+    const safeParams = validateParams(command, params ?? {}) as Record<string, any>;
+    return handler(ctx, safeParams ?? {});
   } catch (err) {
+    if (isZodError(err)) {
+      throw new Error('Invalid request data. Please review your input and try again.');
+    }
     // Re-throw user-facing errors as-is; they are already friendly messages.
     throw err;
   }
+}
+
+function isZodError(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    (err as { name?: string }).name === 'ZodError'
+  );
 }
 
 export function commandExists(command: string): boolean {

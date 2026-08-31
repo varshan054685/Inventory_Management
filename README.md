@@ -115,9 +115,19 @@ The installer creates desktop and start-menu shortcuts. The app also runs unpack
 ## 8. How to Restore a Backup
 
 1. Open **Backup & Restore** in the sidebar.
-2. Click **Choose Backup File…** and pick a `.db` backup.
+2. Click **Choose Backup File…** and pick a `.db` (or `.enc` for encrypted) backup.
 3. Confirm the warning — a **safety backup of the current database is created automatically first**, then the selected backup replaces the data.
 4. The app reloads with the restored data.
+
+### Encrypted backups
+
+Because backups can contain sensitive employee and business data, you can create an **encrypted backup** by ticking **"Encrypt with password"** before clicking **Backup Now**. Encrypted backups:
+
+- Use **AES-256-GCM** authenticated encryption with the password-derived key (via scrypt).
+- Are stored with a `.enc` extension and **can only be restored with the correct password** (a wrong password is detected automatically).
+- Are never committed to source control or treated as ordinary files.
+
+> Choose a strong password and keep it somewhere safe — it cannot be recovered.
 
 ## 9. How to Change the Password
 
@@ -165,11 +175,24 @@ The test suite covers: purchase stock increase, production raw-material deductio
 
 ## 15. How to Update the Application
 
-This is an offline app — updates are manual:
+The app supports **automatic updates** through `electron-updater` once a signed, HTTPS-hosted release feed is configured (see SECURITY.md and `electron-builder.yml`). Updates never block normal use:
+
+- On startup the app checks for updates **in the background** — a notification appears when a new version is available.
+- You can choose **Download** or **Later**; downloading happens in the background without freezing the app.
+- When the download finishes, **Restart and Update** or **Later**.
+- **Before installing**, the app creates and verifies an automatic backup of your data — if that backup fails, the update is postponed to protect your data.
+- If the network/update server is unavailable, the app simply reports "working offline" and continues fully functional.
+- Update preferences live in **Settings → Updates** (automatic checks, automatic download, release channel).
+
+Until a signed production update endpoint is configured, updates are manual:
 
 1. Back up your database (**Backup & Restore → Backup Now**).
 2. Replace the application (or re-run a newer installer). The database lives in `%APPDATA%` and survives reinstall/upgrade, so your data is preserved.
 3. Launch and verify. If anything looks off, restore your backup.
+
+## 15.1 Security
+
+This application is built with security-by-design: sandboxed renderer, `contextIsolation`, no Node APIs in the renderer, Zod-validated IPC, prepared-statement SQLite with transactions, salted password hashing, application lock with auto-lock, audit logging, safe delete policy, validated + optionally password-encrypted backups, strict CSP, and signed/HTTPS-only auto-updates. See **`SECURITY.md`** for the full security architecture, threat model, and release checklist.
 
 ---
 

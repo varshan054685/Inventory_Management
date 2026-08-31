@@ -18,11 +18,20 @@ import type {
   ItemType,
 } from '@/shared/types';
 
+import { emptyStatus, type UpdateCheckResult } from '@/shared/update';
+
 type Invoker = {
   invoke: (command: string, params?: unknown) => Promise<unknown>;
   pickBackupFolder: () => Promise<string | null>;
   pickBackupFile: () => Promise<string | null>;
   saveReportFile: (name: string) => Promise<string | null>;
+  updater: {
+    status: () => Promise<UpdateCheckResult>;
+    check: () => Promise<UpdateCheckResult>;
+    download: () => Promise<UpdateCheckResult>;
+    install: () => Promise<boolean>;
+  };
+  onLockState: (cb: (locked: boolean) => void) => () => void;
 };
 
 function getApi() {
@@ -68,8 +77,17 @@ export const api = {
     changePassword: (userId: number, currentPassword: string, newPassword: string) =>
       invoke<void>('auth.changePassword', { userId, currentPassword, newPassword }),
     lock: () => invoke<{ locked: boolean }>('auth.lock'),
+    logout: () => invoke<{ loggedOut: boolean }>('auth.logout'),
     unlock: (username: string, password: string) =>
       invoke<{ id: number; username: string; role: string }>('auth.unlock', { username, password }),
+  },
+
+  updater: {
+    status: () => getApi()?.updater?.status?.() ?? Promise.resolve<UpdateCheckResult>(emptyStatus()),
+    check: () => getApi()?.updater?.check?.() ?? Promise.resolve<UpdateCheckResult>(emptyStatus()),
+    download: () => getApi()?.updater?.download?.() ?? Promise.resolve<UpdateCheckResult>(emptyStatus()),
+    install: () => getApi()?.updater?.install?.() ?? Promise.resolve(false),
+    onLockState: (cb: (locked: boolean) => void) => getApi()?.onLockState?.(cb) ?? (() => undefined),
   },
 
   settings: {
@@ -225,9 +243,17 @@ export const api = {
   },
 
   backup: {
-    create: (kind: 'manual' | 'auto') => invoke<{ fileName: string; filePath: string }>('backup.create', { kind }),
+    create: (kind: 'manual' | 'auto', password?: string) =>
+      invoke<{ fileName: string; filePath: string; encrypted?: boolean }>('backup.create', {
+        kind,
+        password: password || undefined,
+      }),
     list: () => invoke<Array<Record<string, unknown>>>('backup.list'),
-    restore: (backupPath: string) => invoke<{ restored: boolean }>('backup.restore', { backupPath }),
+    restore: (backupPath: string, password?: string) =>
+      invoke<{ restored: boolean }>('backup.restore', {
+        backupPath,
+        password: password || undefined,
+      }),
   },
 
   audit: {

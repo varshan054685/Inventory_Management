@@ -3,9 +3,10 @@ import { api } from '@/api/client';
 import { useData } from '@/hooks/useData';
 import { useToast } from '@/hooks/useToast';
 import { Card, Button, Field, Modal, EmptyState, Spinner, ConfirmDialog } from '@/components/ui';
-import { Save, KeyRound, Scale, FlaskConical, Trash2, Plus, X } from 'lucide-react';
+import { Save, KeyRound, Scale, FlaskConical, Trash2, Plus, X, Lock as LockIcon, DownloadCloud } from 'lucide-react';
 import type { SettingsData, UnitConversion } from '@/shared/types';
 import { useAuth } from '@/store/auth';
+import { UpdateSection } from './UpdateSection';
 
 const UNITS = ['KG', 'PIECES', 'BOXES', 'BUNDLES', 'LITRES'];
 
@@ -77,6 +78,24 @@ export function SettingsPage() {
           </Field>
         </div>
       </Card>
+
+      <Card>
+        <h2 className="card-title mb-2 flex items-center gap-2"><LockIcon className="w-5 h-5 text-brand-500" /> Security & Session</h2>
+        <p className="text-sm text-slate-500 mb-3">For your protection, the app automatically locks after a period of inactivity. Re-enter your password to continue.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field label="Auto-lock after inactivity">
+            <label className="flex items-center gap-2 mt-2">
+              <input type="checkbox" className="w-4 h-4" checked={form.autoLockEnabled} onChange={(e) => set('autoLockEnabled', e.target.checked)} />
+              <span className="text-sm text-slate-600 dark:text-slate-300">Lock automatically when idle</span>
+            </label>
+          </Field>
+          <Field label="Lock after (minutes)">
+            <input className="input" type="number" min="1" value={form.autoLockMinutes} onChange={(e) => set('autoLockMinutes', Number(e.target.value) || 15)} />
+          </Field>
+        </div>
+      </Card>
+
+      <UpdateSection />
 
       <Card>
         <h2 className="card-title mb-4">Automatic Backup</h2>

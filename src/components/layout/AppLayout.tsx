@@ -3,6 +3,7 @@ import { NavLink, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { LogOut, Lock, Candy } from 'lucide-react';
 import { NAV_ITEMS } from './nav';
 import { useAuth } from '@/store/auth';
+import { UpdateBanner } from '@/components/update/UpdateBanner';
 
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { ProductsPage } from '@/features/products/ProductsPage';
@@ -114,6 +115,7 @@ export function AppLayout() {
           <AppRoutes />
         </main>
       </div>
+      <UpdateBanner />
     </div>
   );
 }

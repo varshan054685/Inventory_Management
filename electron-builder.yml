@@ -13,7 +13,9 @@ files:
 
 asar: true
 
-# On Windows, code signing is optional. An unsigned build still installs and runs.
+# ---------------------------------------------------------------------------
+# Windows packaging
+# ---------------------------------------------------------------------------
 win:
   target:
     - target: nsis
@@ -31,5 +33,33 @@ nsis:
   shortcutName: "Inventory Management System"
   artifactName: "InventoryManagement-Setup-${version}.exe"
 
-# Keep downloads minimal / no auto-update network requirements.
-publish: null
+# ---------------------------------------------------------------------------
+# Auto-update (HTTPS only)
+# ---------------------------------------------------------------------------
+# electron-updater looks for `publish` to locate the update feed. Override the
+# provider + URL at build time via environment variables / CI secrets -- never
+# commit credentials. Examples:
+#   publish.provider   = generic
+#   publish.url        = https://updates.example.com/Inventory-Management   (HTTPS required)
+#
+# Local/unsigned dev builds intentionally publish to nothing; the updater then
+# reports "up to date" and the app runs fully offline. See SECURITY.md and the
+# RELEASE PROCESS section for how to enable signed production updates.
+publish:
+  provider: generic
+  url: https://example.com/Inventory-Management
+  channel: latest
+
+# ---------------------------------------------------------------------------
+# Code signing (production only)
+# ---------------------------------------------------------------------------
+# Set these from secure CI/CD secrets. NEVER commit the .pfx/.p12 or its
+# password to Git.
+#
+#   CSC_LINK=<path-or-base64-of-certificate.pfx>
+#   CSC_KEY_PASSWORD=<certificate password>
+#   WIN_CSC_LINK / WIN_CSC_KEY_PASSWORD (Windows-specific variants)
+#
+# Without these the build is unsigned (installs locally, used for staging).
+# Windows SmartScreen will warn on unsigned installers; use a real signing
+# certificate for public releases.
