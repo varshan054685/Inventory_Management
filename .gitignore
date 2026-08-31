@@ -19,24 +19,51 @@ Thumbs.db
 # Vite cache
 .vite/
 
+# TypeScript build info
+*.tsbuildinfo
+
 # Test coverage
 coverage/
 
-# Database files
+# Database files (local business data — never commit)
 *.db
 *.db-journal
 *.sqlite
 *.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
 data/
 
-# Encrypted backups
+# Backups (plaintext + encrypted) — sensitive business data
 *.enc
+*.backup
+*.bak
+backups/
 
-# Env files
+# Temporary test databases created by the test suite
+/tmp-manager-*.sqlite
+
+# Env files / secrets
 .env
 .env.local
 .env.*.local
 
-# Editor
-.vscode/settings.json
+# Code signing certificates & private keys (NEVER commit)
+*.pfx
+*.p12
+*.pem
+*.key
+*.cer
+*.crt
+build/*.pfx
+build/*.p12
+
+# Editor / IDE
+.vscode/
 .idea/
+*.code-workspace
+
+# Misc
+.eslintcache
+*.orig
+*.rej

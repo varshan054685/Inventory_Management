@@ -205,7 +205,11 @@ ipcMain.handle(CHANNEL, async (_event, command: string, params: unknown) => {
   // Any IPC activity counts as user interaction for the auto-lock timer.
   lockManager?.poke();
   try {
-    const result = executeCommand(ctx, command, params);
+    // Await so async handlers (backup.create/restore, etc.) are resolved to
+    // plain values before they are sent back over IPC. Without this, a returned
+    // Promise is not structured-cloneable and Electron throws
+    // "An object could not be cloned".
+    const result = await Promise.resolve(executeCommand(ctx, command, params));
     schedulePersist();
     if (command === 'settings.save') {
       refreshSecurityConfig();

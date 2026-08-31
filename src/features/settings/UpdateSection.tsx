@@ -131,7 +131,7 @@ export function UpdateSection() {
       <div className="mt-5 pt-4 border-t border-slate-200 dark:border-slate-700">
         <h3 className="card-title mb-1 flex items-center gap-2 text-sm"><Cpu className="w-4 h-4 text-brand-500" /> Update Preferences</h3>
         <p className="text-xs text-slate-500 mb-3">The application always remains fully functional offline. Manual "Check for Updates" is always available.</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 text-sm">
           <Field label="Automatic update checks">
             <label className="flex items-center gap-2 mt-1">
               <input type="checkbox" className="w-4 h-4" checked={settings?.updateAutoCheck ?? true} onChange={(e) => setSetting({ updateAutoCheck: e.target.checked })} />

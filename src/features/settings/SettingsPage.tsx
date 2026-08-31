@@ -43,24 +43,24 @@ export function SettingsPage() {
   const set = (k: keyof SettingsData, v: unknown) => setForm({ ...form, [k]: v });
 
   return (
-    <div className="space-y-4 max-w-4xl">
+    <div className="space-y-4">
       <Card>
-        <h2 className="card-title mb-4 flex items-center gap-2"><Store className="w-4 h-4 text-brand-500" /> Business Information</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <h2 className="card-title mb-4 flex items-center gap-2"><Store className="w-5 h-5 text-brand-500" /> Business Information</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           <Field label="Business Name"><input className="input" value={form.companyName} onChange={(e) => set('companyName', e.target.value)} /></Field>
           <Field label="Currency"><select className="input" value={form.currency} onChange={(e) => set('currency', e.target.value)}>
             <option value="INR">INR (₹)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option>
           </select></Field>
           <Field label="Phone"><input className="input" value={form.phone ?? ''} onChange={(e) => set('phone', e.target.value)} /></Field>
           <Field label="Email"><input className="input" value={form.email ?? ''} onChange={(e) => set('email', e.target.value)} /></Field>
-          <Field label="Address" className="md:col-span-2"><input className="input" value={form.companyAddress ?? ''} onChange={(e) => set('companyAddress', e.target.value)} /></Field>
+          <Field label="Address" className="md:col-span-2 xl:col-span-2"><input className="input" value={form.companyAddress ?? ''} onChange={(e) => set('companyAddress', e.target.value)} /></Field>
         </div>
         <p className="text-xs text-slate-400 mt-3">The business name appears in the sidebar, window title, and report/print branding. It updates immediately and persists after restart.</p>
       </Card>
 
       <Card>
         <h2 className="card-title mb-4">Defaults & Behavior</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Field label="Default Unit">
             <select className="input" value={form.defaultUnit} onChange={(e) => set('defaultUnit', e.target.value)}>
               {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
@@ -69,16 +69,16 @@ export function SettingsPage() {
           <Field label="Low Stock Threshold (when no per-item minimum set)">
             <input className="input" type="number" value={form.lowStockThreshold ?? 0} onChange={(e) => set('lowStockThreshold', Number(e.target.value))} />
           </Field>
-          <Field label="Allow Negative Stock">
-            <label className="flex items-center gap-2 mt-2">
-              <input type="checkbox" className="w-4 h-4" checked={form.allowNegativeStock} onChange={(e) => set('allowNegativeStock', e.target.checked)} />
-              <span className="text-sm text-slate-600 dark:text-slate-300">Allow production & dispatch even when stock is insufficient</span>
-            </label>
-          </Field>
           <Field label="Theme">
             <select className="input" value={form.theme} onChange={(e) => set('theme', e.target.value)}>
               <option value="light">Light</option><option value="dark">Dark</option>
             </select>
+          </Field>
+          <Field label="Allow Negative Stock" className="md:col-span-1">
+            <label className="flex items-center gap-2 mt-2">
+              <input type="checkbox" className="w-4 h-4" checked={form.allowNegativeStock} onChange={(e) => set('allowNegativeStock', e.target.checked)} />
+              <span className="text-sm text-slate-600 dark:text-slate-300">Allow production & dispatch even when stock is insufficient</span>
+            </label>
           </Field>
         </div>
       </Card>

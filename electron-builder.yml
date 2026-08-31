@@ -46,9 +46,10 @@ nsis:
 # reports "up to date" and the app runs fully offline. See SECURITY.md and the
 # RELEASE PROCESS section for how to enable signed production updates.
 publish:
-  provider: generic
-  url: https://example.com/Inventory-Management
-  channel: latest
+  provider: github
+  owner: varshan054685
+  repo: Inventory_Management
+  releaseType: release
 
 # ---------------------------------------------------------------------------
 # Code signing (production only)
